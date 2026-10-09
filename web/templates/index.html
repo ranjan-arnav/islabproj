@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>bitchat web - encrypted Bluetooth mesh</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="noise"></div>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true"><span>b</span></div>
+        <div>
+          <h1>bitchat</h1>
+          <p>local mesh / web edition</p>
+        </div>
+      </div>
+
+      <section class="identity-card">
+        <div class="eyebrow">your cryptographic identity</div>
+        <div class="identity-row">
+          <div class="avatar" id="avatar">?</div>
+          <div class="identity-copy">
+            <strong id="nicknameLabel">not configured</strong>
+            <code id="fingerprint">----------------</code>
+          </div>
+          <span class="status-dot" id="identityDot"></span>
+        </div>
+      </section>
+
+      <nav class="nav-block" aria-label="Channels">
+        <div class="nav-heading"><span>channels</span><span class="count">1</span></div>
+        <button class="nav-item active" type="button">
+          <span class="hash">#</span><span>bluetooth</span><span class="live-pill">LIVE</span>
+        </button>
+      </nav>
+
+      <section class="peer-section">
+        <div class="nav-heading"><span>nearby peers</span><span class="count" id="peerCount">0</span></div>
+        <div id="peerList" class="peer-list">
+          <div class="empty-peers">No links yet</div>
+        </div>
+      </section>
+
+      <div class="sidebar-actions">
+        <button id="connectOpen" class="button secondary full" type="button">+ Connect a laptop</button>
+        <button id="panicButton" class="panic" type="button">Panic wipe session</button>
+      </div>
+    </aside>
+
+    <section class="chat-panel">
+      <header class="chat-header">
+        <div>
+          <div class="channel-title"><span>#</span> bluetooth</div>
+          <p>Encrypted local room · relays up to 7 hops</p>
+        </div>
+        <div class="header-status">
+          <div class="radio-icon"><i></i><i></i><i></i></div>
+          <div><span id="radioStatus">checking radio</span><small id="localAddress">—</small></div>
+        </div>
+      </header>
+
+      <div class="security-strip">
+        <span class="shield">✓</span>
+        <span><strong>AES-256-GCM encrypted</strong> · RSA-PSS signed · SHA-256 fingerprints</span>
+        <button id="securityInfo" type="button">How it works</button>
+      </div>
+
+      <section id="messages" class="messages" aria-live="polite">
+        <div class="welcome" id="welcomeCard">
+          <div class="welcome-icon">⌁</div>
+          <h2>No server. No internet. Just nearby laptops.</h2>
+          <p>Choose the same room code on every laptop, pair them in your operating system, then connect one laptop to another.</p>
+          <button id="setupOpen" class="button primary" type="button">Set up this laptop</button>
+        </div>
+      </section>
+
+      <form id="composer" class="composer">
+        <div class="composer-target">
+          <span>send to</span>
+          <select id="recipientSelect" disabled>
+            <option value=""># room broadcast</option>
+          </select>
+          <span id="privacyMode" class="privacy-mode">shared room encryption</span>
+        </div>
+        <textarea id="messageInput" rows="1" maxlength="2000" placeholder="Join a room to start chatting…" disabled></textarea>
+        <div class="composer-meta"><span id="charCount">0 / 2000</span><span>Enter to send · Shift+Enter for a new line</span></div>
+        <button id="sendButton" class="send" type="submit" disabled aria-label="Send message">↑</button>
+      </form>
+    </section>
+
+    <aside class="activity-panel">
+      <div class="activity-heading"><span>network activity</span><span class="pulse"></span></div>
+      <div class="stats-grid">
+        <div><span id="statPeers">0</span><small>links</small></div>
+        <div><span id="statMessages">0</span><small>messages</small></div>
+        <div><span id="statRoom">—</span><small>room id</small></div>
+      </div>
+      <div id="eventList" class="event-list"></div>
+      <div class="privacy-note">
+        <span>◎</span>
+        <div><strong>Local by design</strong><p>The web UI binds to this laptop only. Your room code and decrypted messages stay in memory.</p></div>
+      </div>
+    </aside>
+  </main>
+
+  <dialog id="setupDialog">
+    <form id="setupForm" class="dialog-card">
+      <button class="dialog-close" type="button" data-close="setupDialog">×</button>
+      <div class="step-label">Step 1 of 2</div>
+      <h2>Join an encrypted room</h2>
+      <p>Everyone who should read the chat must enter the exact same room code. Share it in person, not in this chat.</p>
+      <label>Nickname<input id="nicknameInput" maxlength="32" autocomplete="nickname" placeholder="e.g. arnav" required></label>
+      <label>Room code<input id="roomInput" type="password" minlength="8" autocomplete="off" placeholder="At least 8 characters" required></label>
+      <label class="check"><input id="showRoom" type="checkbox"><span>Show room code</span></label>
+      <div id="setupError" class="form-error"></div>
+      <button class="button primary full" type="submit">Derive room key</button>
+      <small class="fineprint">PBKDF2-HMAC-SHA256 derives the AES key locally. The code is never sent over Bluetooth.</small>
+    </form>
+  </dialog>
+
+  <dialog id="connectDialog">
+    <form id="connectForm" class="dialog-card">
+      <button class="dialog-close" type="button" data-close="connectDialog">×</button>
+      <div class="step-label">Step 2 of 2</div>
+      <h2>Connect a paired laptop</h2>
+      <ol class="mini-steps">
+        <li>Pair both laptops in Windows/macOS/Linux Bluetooth settings.</li>
+        <li>Keep this app running on both.</li>
+        <li>Enter the other laptop's Bluetooth MAC address below.</li>
+      </ol>
+      <label>Bluetooth address<input id="addressInput" placeholder="AA:BB:CC:DD:EE:FF" spellcheck="false" required></label>
+      <label>RFCOMM channel<input id="channelInput" type="number" min="1" max="30" value="12" required></label>
+      <div id="knownDevices" class="known-devices"></div>
+      <div id="connectError" class="form-error"></div>
+      <button id="connectButton" class="button primary full" type="submit">Connect over Bluetooth</button>
+      <small class="fineprint">Only one side needs to connect. The other side accepts the link automatically on channel 12.</small>
+    </form>
+  </dialog>
+
+  <dialog id="securityDialog">
+    <div class="dialog-card">
+      <button class="dialog-close" type="button" data-close="securityDialog">×</button>
+      <div class="step-label">Security design</div>
+      <h2>Three layers, one packet</h2>
+      <div class="security-list">
+        <div><b>01</b><span><strong>AES-256-GCM</strong><small>Encrypts the message and detects ciphertext tampering.</small></span></div>
+        <div><b>02</b><span><strong>RSA-OAEP + RSA-PSS</strong><small>Private messages are sealed to one recipient and every message is signed.</small></span></div>
+        <div><b>03</b><span><strong>Opaque multi-hop relay</strong><small>Intermediate laptops forward private ciphertext without displaying or decrypting it.</small></span></div>
+      </div>
+      <p class="warning">Room broadcasts are readable by room members. Choose a named recipient in the composer for recipient-only end-to-end encryption.</p>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

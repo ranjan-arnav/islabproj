@@ -62,6 +62,10 @@ xcuserdata/
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+.bitchat-web/
+.pytest_cache/
+tmp/
 
 ## Temporary files
 *.tmp

@@ -105,6 +105,10 @@ For detailed protocol documentation, see the [Technical Whitepaper](WHITEPAPER.m
 
 ## Setup
 
+### Python web edition (laptop-to-laptop Bluetooth)
+
+This checkout includes a standalone Python web adaptation under [`web/`](web/README.md). It runs the interface in a local browser while Python handles Bluetooth RFCOMM links, encrypted multi-hop relay, AES-256-GCM, and RSA-PSS signatures. See the web guide for supported systems and the complete multi-laptop setup process.
+
 ### Option 1: Using Xcode
 
 ```bash
