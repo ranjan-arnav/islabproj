@@ -66,6 +66,10 @@ __pycache__/
 .bitchat-web/
 .pytest_cache/
 tmp/
+.android-toolchain/
+android/.gradle/
+android/local.properties
+android/app/build/
 
 ## Temporary files
 *.tmp

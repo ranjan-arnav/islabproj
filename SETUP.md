@@ -113,7 +113,7 @@ For larger groups, connect each laptop to one or two nearby laptops. The applica
 - **AES-256-GCM** encrypts messages and detects ciphertext modification.
 - **PBKDF2-HMAC-SHA256** derives the AES key from the shared room code.
 - **RSA-3072 PSS with SHA-256** signs every message.
-- **RSA-OAEP with SHA-256** wraps each private message key to its selected recipient.
+- **RSA-3072 PKCS#1 v1.5** wraps each random private AES message key to its selected recipient for consistent Android/Python provider interoperability.
 - **SHA-256 fingerprints** identify each installation's public key.
 - A fresh random nonce is generated for every encrypted message.
 

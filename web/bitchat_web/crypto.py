@@ -71,14 +71,33 @@ class Identity:
         return _b64(signature)
 
     def unwrap_key(self, wrapped_key_b64: str) -> bytes:
-        return self.private_key.decrypt(
-            _unb64(wrapped_key_b64),
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None,
-            ),
+        wrapped = _unb64(wrapped_key_b64)
+        try:
+            key = self.private_key.decrypt(wrapped, padding.PKCS1v15())
+            if len(key) == 32:
+                return key
+        except ValueError:
+            pass
+        # Current explicit cross-platform profile first, followed by the two
+        # SHA-256 OAEP profiles emitted by earlier APK builds during migration.
+        profiles = (
+            (hashes.SHA1(), hashes.SHA1()),
+            (hashes.SHA256(), hashes.SHA1()),
+            (hashes.SHA256(), hashes.SHA256()),
         )
+        for oaep_digest, mgf_digest in profiles:
+            try:
+                return self.private_key.decrypt(
+                    wrapped,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=mgf_digest),
+                        algorithm=oaep_digest,
+                        label=None,
+                    ),
+                )
+            except ValueError:
+                continue
+        raise ValueError("Decryption failed for supported RSA-OAEP parameters")
 
 
 def load_or_create_identity(path: Path) -> Identity:
@@ -160,14 +179,7 @@ def wrap_key(key: bytes, recipient_public_key_b64: str) -> str:
     public_key = serialization.load_der_public_key(_unb64(recipient_public_key_b64))
     if not isinstance(public_key, rsa.RSAPublicKey):
         raise ValueError("Recipient key is not RSA")
-    wrapped = public_key.encrypt(
-        key,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None,
-        ),
-    )
+    wrapped = public_key.encrypt(key, padding.PKCS1v15())
     return _b64(wrapped)
 
 
